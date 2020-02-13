@@ -40,6 +40,7 @@ import org.mockito.Mockito.never
 import org.mockito.Mockito.spy
 import org.mockito.Mockito.verify
 import org.mockito.MockitoAnnotations.initMocks
+import org.robolectric.annotation.Config
 import org.robolectric.util.ReflectionHelpers.setStaticField
 import kotlin.reflect.jvm.javaField
 
@@ -55,8 +56,8 @@ class WebAppShortcutManagerTest {
     private lateinit var manager: WebAppShortcutManager
 
     @Before
+    @Config(sdk = [0])
     fun setup() {
-        setSdkInt(0)
         initMocks(this)
         context = spy(testContext)
 
@@ -69,9 +70,13 @@ class WebAppShortcutManagerTest {
     }
 
     @After
-    fun teardown() = setSdkInt(0)
+    @Config(sdk = [0])
+    fun teardown() {
+
+    }
 
     @Test
+    @Config(sdk = [Build.VERSION_CODES.O])
     fun `requestPinShortcut no-op if pinning unsupported`() = runBlockingTest {
         val manifest = WebAppManifest(
             name = "Demo",
@@ -88,7 +93,7 @@ class WebAppShortcutManagerTest {
         manager.requestPinShortcut(context, session)
         verify(manager, never()).buildWebAppShortcut(context, manifest)
 
-        setSdkInt(Build.VERSION_CODES.O)
+       // setSdkInt(Build.VERSION_CODES.O)
         `when`(shortcutManager.isRequestPinShortcutSupported).thenReturn(false)
         clearInvocations(manager)
 
@@ -97,8 +102,8 @@ class WebAppShortcutManagerTest {
     }
 
     @Test
+    @Config(sdk = [Build.VERSION_CODES.O])
     fun `requestPinShortcut won't make a PWA icon if the session is not installable`() = runBlockingTest {
-        setSdkInt(Build.VERSION_CODES.O)
         val manifest = WebAppManifest(
             name = "Demo",
             startUrl = "https://example.com",
@@ -116,8 +121,8 @@ class WebAppShortcutManagerTest {
     }
 
     @Test
+    @Config(sdk = [Build.VERSION_CODES.O])
     fun `requestPinShortcut pins PWA shortcut`() = runBlockingTest {
-        setSdkInt(Build.VERSION_CODES.O)
         val manifest = WebAppManifest(
             name = "Demo",
             startUrl = "https://example.com",
@@ -138,8 +143,8 @@ class WebAppShortcutManagerTest {
     }
 
     @Test
+    @Config(sdk = [Build.VERSION_CODES.O])
     fun `requestPinShortcut pins basic shortcut`() = runBlockingTest {
-        setSdkInt(Build.VERSION_CODES.O)
         val session: Session = mock()
         `when`(session.securityInfo).thenReturn(Session.SecurityInfo(secure = true))
         val shortcutCompat: ShortcutInfoCompat = mock()
@@ -152,8 +157,8 @@ class WebAppShortcutManagerTest {
     }
 
     @Test
+    @Config(sdk = [Build.VERSION_CODES.O])
     fun `buildBasicShortcut uses manifest short name as label by default`() = runBlockingTest {
-        setSdkInt(Build.VERSION_CODES.O)
         val session = Session("https://mozilla.org")
         session.title = "Internet for people, not profit — Mozilla"
         session.webAppManifest = WebAppManifest(
@@ -167,8 +172,8 @@ class WebAppShortcutManagerTest {
     }
 
     @Test
+    @Config(sdk = [Build.VERSION_CODES.O])
     fun `buildBasicShortcut uses manifest name as label by default`() = runBlockingTest {
-        setSdkInt(Build.VERSION_CODES.O)
         val session = Session("https://mozilla.org")
         session.title = "Internet for people, not profit — Mozilla"
         session.webAppManifest = WebAppManifest(name = "Mozilla", startUrl = "https://mozilla.org")
@@ -178,8 +183,8 @@ class WebAppShortcutManagerTest {
     }
 
     @Test
+    @Config(sdk = [Build.VERSION_CODES.O])
     fun `buildBasicShortcut uses session title as label if there is no manifest`() = runBlockingTest {
-        setSdkInt(Build.VERSION_CODES.O)
         val expectedTitle = "Internet for people, not profit — Mozilla"
         val session = Session("https://mozilla.org")
         session.title = expectedTitle
@@ -189,8 +194,8 @@ class WebAppShortcutManagerTest {
     }
 
     @Test
+    @Config(sdk = [Build.VERSION_CODES.O])
     fun `buildBasicShortcut can create a shortcut with a custom name`() = runBlockingTest {
-        setSdkInt(Build.VERSION_CODES.O)
         val title = "Internet for people, not profit — Mozilla"
         val expectedName = "Mozilla"
         val session = Session("https://mozilla.org")
@@ -201,7 +206,10 @@ class WebAppShortcutManagerTest {
     }
 
     @Test
-    fun `updateShortcuts no-op`() = runBlockingTest {
+    @Config(sdk = [Build.VERSION_CODES.N])
+    fun `updateShortcuts no-op on SDK N`() = runBlockingTest {
+      //  setSdkInt(Build.VERSION_CODES.N)
+
         val manifests = listOf(WebAppManifest(name = "Demo", startUrl = "https://example.com"))
         doReturn(null).`when`(manager).buildWebAppShortcut(context, manifests[0])
 
@@ -209,14 +217,23 @@ class WebAppShortcutManagerTest {
         verify(manager, never()).buildWebAppShortcut(context, manifests[0])
         verify(shortcutManager, never()).updateShortcuts(any())
 
-        setSdkInt(Build.VERSION_CODES.N_MR1)
+    }
+
+    @Test
+    @Config(sdk = [Build.VERSION_CODES.N_MR1])
+    fun `updateShortcuts no-op on SDK N_MR1`() = runBlockingTest {
+
+        val manifests = listOf(WebAppManifest(name = "Demo", startUrl = "https://example.com"))
+        doReturn(null).`when`(manager).buildWebAppShortcut(context, manifests[0])
+
         manager.updateShortcuts(context, manifests)
         verify(shortcutManager).updateShortcuts(emptyList())
     }
 
+
     @Test
+    @Config(sdk = [Build.VERSION_CODES.N_MR1])
     fun `updateShortcuts updates list of existing shortcuts`() = runBlockingTest {
-        setSdkInt(Build.VERSION_CODES.N_MR1)
         val manifests = listOf(WebAppManifest(name = "Demo", startUrl = "https://example.com"))
         val shortcutCompat: ShortcutInfoCompat = mock()
         val shortcut: ShortcutInfo = mock()
@@ -257,10 +274,10 @@ class WebAppShortcutManagerTest {
     }
 
     @Test
+    @Config(sdk = [Build.VERSION_CODES.N_MR1])
     fun `findShortcut returns shortcut`() {
         assertNull(manager.findShortcut(context, "https://mozilla.org"))
 
-        setSdkInt(Build.VERSION_CODES.N_MR1)
         val exampleShortcut = mock<ShortcutInfo>().apply {
             `when`(id).thenReturn("https://example.com")
         }
@@ -277,23 +294,31 @@ class WebAppShortcutManagerTest {
     }
 
     @Test
-    fun `uninstallShortcuts removes shortcut`() = runBlockingTest {
+   // @Config(sdk = [0])
+    fun `uninstallShortcuts removes shortcut on SDK 0`() = runBlockingTest {
+        setStaticField(Build.VERSION::SDK_INT.javaField, 0)
         manager.uninstallShortcuts(context, listOf("https://mozilla.org"))
+
         verify(shortcutManager, never()).disableShortcuts(listOf("https://mozilla.org"), null)
         verify(storage).removeManifests(listOf("https://mozilla.org"))
 
         clearInvocations(shortcutManager)
         clearInvocations(storage)
 
-        setSdkInt(Build.VERSION_CODES.N_MR1)
+    }
+
+    @Test
+    @Config(sdk = [Build.VERSION_CODES.N_MR1])
+    fun `uninstallShortcuts2 removes shortcut on SDK N_MR1`() = runBlockingTest {
         manager.uninstallShortcuts(context, listOf("https://mozilla.org"))
         verify(shortcutManager).disableShortcuts(listOf("https://mozilla.org"), null)
         verify(storage).removeManifests(listOf("https://mozilla.org"))
     }
 
     @Test
+    @Config(sdk = [Build.VERSION_CODES.N_MR1])
     fun `uninstallShortcuts sets disabledMessage`() = runBlockingTest {
-        setSdkInt(Build.VERSION_CODES.N_MR1)
+       // setSdkInt(Build.VERSION_CODES.N_MR1)
         val domains = listOf("https://mozilla.org", "https://firefox.com")
         val message = "Can't touch this - its uninstalled."
         WebAppShortcutManager(context, httpClient, storage).uninstallShortcuts(context, domains, message)
@@ -302,8 +327,9 @@ class WebAppShortcutManagerTest {
     }
 
     @Test
+    @Config(sdk = [Build.VERSION_CODES.N_MR1])
     fun `checking unknown url returns uninstalled state`() = runBlockingTest {
-        setSdkInt(Build.VERSION_CODES.N_MR1)
+     //   setSdkInt(Build.VERSION_CODES.N_MR1)
 
         val url = "https://mozilla.org"
         val currentTime = System.currentTimeMillis()
@@ -317,8 +343,9 @@ class WebAppShortcutManagerTest {
     }
 
     @Test
+    @Config(sdk = [Build.VERSION_CODES.N_MR1])
     fun `checking a known url returns installed state`() = runBlockingTest {
-        setSdkInt(Build.VERSION_CODES.N_MR1)
+     //   setSdkInt(Build.VERSION_CODES.N_MR1)
 
         val url = "https://mozilla.org/pwa/"
         val currentTime = System.currentTimeMillis()
@@ -330,10 +357,10 @@ class WebAppShortcutManagerTest {
 
         assertEquals(WebAppShortcutManager.WebAppInstallState.Installed, installState)
     }
-
-    private fun setSdkInt(sdkVersion: Int) {
-        setStaticField(Build.VERSION::SDK_INT.javaField, sdkVersion)
-    }
+//
+//    private fun setSdkInt(sdkVersion: Int) {
+//        setStaticField(Build.VERSION::SDK_INT.javaField, sdkVersion)
+//    }
 
     private fun buildInstallableSession(manifest: WebAppManifest): Session {
         val session: Session = mock()
